@@ -952,22 +952,23 @@ Otherwise, on reconnection, a node MUST transmit `channel_reestablish`
 for each channel, and MUST wait for to receive the other node's
 `channel_reestablish` message before sending any other messages for
 that channel.  The sending node MUST set `commitments_received` to the
-number of `commitment_signed` messages received, and MUST set
-`revocations_received` to the number of `revoke_and_ack` messages
-received.
+commitment number of the last `commitment_signed` it received, and
+MUST set `revocations_received` to the commitment number of the last
+`revoke_and_ack` message received.
 
-If `commitments_received` is one less than the number of
-`commitment_signed` messages the receiving node has sent, it MUST send
-a set of `update_` messages against the prior commitment transaction
-followed by `commitment_signed`, otherwise if `commitments_received`
-is not equal to the number of `commitment_signed` messages the
-receiving node has sent, it SHOULD fail the channel.
+If `commitments_received` is one less than the commitment number of
+the last `commitment_signed` message the receiving node has sent, it
+MUST send a set of `update_` messages against the prior commitment
+transaction followed by `commitment_signed`, otherwise if
+`commitments_received` is not equal to the commitment number of the
+last `commitment_signed` message the receiving node has sent, it
+SHOULD fail the channel.
 
-If `revocations_received` is one less than the number of
-`revoke_and_ack` messages the receiving node has sent, it MUST re-send
+If `revocations_received` is one less than the commitment number of
+the last `revoke_and_ack` the receiving node has sent, it MUST re-send
 the final `revoke_and_ack`, otherwise if `revocations_received` is not
-equal to the number of `revoke_and_ack` messages the receiving node
-has sent, it SHOULD fail the channel.
+equal to the commitment number of the last `revoke_and_ack` the
+receiving node has sent, it SHOULD fail the channel.
 
 A node MUST not assume that previously-transmitted messages were lost:
 in particular, if it has sent a previous `commitment_signed` message,
@@ -976,8 +977,9 @@ transaction is broadcast by the other side at any time.  This is
 particularly important if a node does not simply retransmit the exact
 same `update_` messages as previously sent.
 
-If the channel has entered closing negotiation, the node MUST
-retransmit the last `closing_signed`.
+On reconnection if the node has sent a previous `shutdown` it MUST
+retransmit it, and if the node has sent a previous `closing_signed` it
+MUST then retransmit the last `closing_signed`.
 
 ### Rationale
 
@@ -994,8 +996,8 @@ polite to retransmit before disconnecting again, but it's not a MUST
 because there are also occasions where a node can simply forget the
 channel altogether.
 
-There is similarly no acknowledgment for `closing_signed`, so it
-is also retransmitted on reconnection.
+There is similarly no acknowledgment for `closing_signed`, or
+`shutdown`, so they are also retransmitted on reconnection.
 
 The handling of updates is similarly atomic: if the commit is not
 acknowledged (or wasn't sent) the updates are re-sent.  However, we
