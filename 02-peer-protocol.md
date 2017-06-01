@@ -946,9 +946,14 @@ so the effects of `update_fulfill_htlc` is not completely reversed.
 
 On reconnection, if a channel is in an error state, the node SHOULD
 retransmit the error packet and ignore any other packets for that
-channel.
+channel, and the following requirements do not apply.
 
-Otherwise, on reconnection, a node MUST transmit `channel_reestablish`
+On reconnection, a node MUST retransmit `funding_locked` unless it has
+received an `update_` or `revoke_and_ack` for that channel, otherwise
+it MAY retransmit `funding_locked`.  On reconnection, a node MUST ignore
+a redundant `funding_locked` if it receives one.
+
+On reconnection, a node MUST transmit `channel_reestablish`
 for each channel, and MUST wait for to receive the other node's
 `channel_reestablish` message before sending any other messages for
 that channel.  The sending node MUST set `commitments_received` to the
@@ -998,6 +1003,8 @@ channel altogether.
 
 There is similarly no acknowledgment for `closing_signed`, or
 `shutdown`, so they are also retransmitted on reconnection.
+`funding_locked` is implicitly acknowledged by the start of normal
+operation, but for simplicity can simply be always retransmitted.
 
 The handling of updates is similarly atomic: if the commit is not
 acknowledged (or wasn't sent) the updates are re-sent.  However, we
